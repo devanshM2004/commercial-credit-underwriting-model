@@ -735,5 +735,157 @@ note(ws, r, "This memo is the underwriter's written recommendation. The decision
 
 
 # ----------------------------------------------------------------------------
+# 09 Sensitivity Analysis  (downside / stress testing)
+# ----------------------------------------------------------------------------
+S9 = "09 Sensitivity Analysis"
+ws = wb.create_sheet(S9)
+ws.sheet_view.showGridLines = False
+ws.column_dimensions["A"].width = 38
+for col in ("B", "C", "D"):
+    ws.column_dimensions[col].width = 15
+ws.column_dimensions["E"].width = 40
+title_block(ws, "Sensitivity / Downside Scenario Analysis",
+            "How does the credit hold up if performance weakens?", span=5)
+
+r = 4
+section(ws, r, "Scenario Stress Drivers  (blue = inputs)", span=5); r += 1
+hdr(ws.cell(r, 1), "Assumption")
+hdr(ws.cell(r, 2), "Base Case")
+hdr(ws.cell(r, 3), "Downside")
+hdr(ws.cell(r, 4), "Stress")
+hdr(ws.cell(r, 5), "Comment")
+r += 1
+DECL = r
+label(ws.cell(r, 1), "Revenue Decline vs. 2025")
+for c, v in zip("BCD", [0.0, 0.07, 0.15]):
+    inp(ws[f"{c}{r}"], v, PCT)
+cmt = ws.cell(r, 5, "Lower repair volumes / lost customers"); cmt.font = NOTE_FONT; cmt.alignment = WRAP; cmt.border = BORDER
+r += 1
+COMP = r
+label(ws.cell(r, 1), "EBITDA Margin Compression (pts)")
+for c, v in zip("BCD", [0.0, 0.010, 0.030]):
+    inp(ws[f"{c}{r}"], v, PCT)
+cmt = ws.cell(r, 5, "Pricing pressure, wage/parts inflation"); cmt.font = NOTE_FONT; cmt.alignment = WRAP; cmt.border = BORDER
+r += 1
+AOPX = r
+label(ws.cell(r, 1), "Additional Operating Expenses ($)")
+for c, v in zip("BCD", [0, 20000, 50000]):
+    inp(ws[f"{c}{r}"], v, CUR0)
+cmt = ws.cell(r, 5, "Fuel, insurance, repairs above plan"); cmt.font = NOTE_FONT; cmt.alignment = WRAP; cmt.border = BORDER
+r += 2
+
+section(ws, r, "Shared Model Inputs  (pulled live from other tabs)", span=5); r += 1
+hdr(ws.cell(r, 1), "Input"); hdr(ws.cell(r, 2), "Value"); r += 1
+SREV = r
+label(ws.cell(r, 1), "2025 Base Revenue")
+out(ws.cell(r, 2), f"='{S2}'!D{REV}", CUR0); r += 1
+SMARG = r
+label(ws.cell(r, 1), "2025 Base EBITDA Margin")
+out(ws.cell(r, 2), f"='{S2}'!D{EBITDA}/'{S2}'!D{REV}", PCT); r += 1
+SDA = r
+label(ws.cell(r, 1), "Depreciation & Amortization")
+out(ws.cell(r, 2), f"='{S2}'!D{DEP}", CUR0); r += 1
+SINT = r
+label(ws.cell(r, 1), "Interest Expense")
+out(ws.cell(r, 2), f"='{S2}'!D{INT}", CUR0); r += 1
+STAX = r
+label(ws.cell(r, 1), "Effective Tax Rate")
+inp(ws.cell(r, 2), 0.25, PCT); r += 1
+SCAPEX = r
+label(ws.cell(r, 1), "Maintenance Capex (unfinanced)")
+inp(ws.cell(r, 2), 60000, CUR0); r += 1
+SDS = r
+label(ws.cell(r, 1), "Total Annual Debt Service")
+out(ws.cell(r, 2), f"='{S5}'!B{TDS}", CUR0); r += 1
+SCOV = r
+label(ws.cell(r, 1), "DSCR Covenant Minimum")
+out(ws.cell(r, 2), f"='{S5}'!B{PMIN}", RATIO); r += 2
+
+section(ws, r, "Scenario Results  (recalculated CFADS & DSCR)", span=5); r += 1
+hdr(ws.cell(r, 1), "Metric")
+hdr(ws.cell(r, 2), "Base Case")
+hdr(ws.cell(r, 3), "Downside")
+hdr(ws.cell(r, 4), "Stress")
+hdr(ws.cell(r, 5), "")
+r += 1
+SR = r
+label(ws.cell(r, 1), "Stressed Revenue")
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"=$B${SREV}*(1-{c}{DECL})", CUR0)
+r += 1
+SM = r
+label(ws.cell(r, 1), "Stressed EBITDA Margin")
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"=$B${SMARG}-{c}{COMP}", PCT)
+r += 1
+EPRE = r
+label(ws.cell(r, 1), "EBITDA before extra OpEx")
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"={c}{SR}*{c}{SM}", CUR)
+r += 1
+LAO = r
+label(ws.cell(r, 1), "Less: Additional OpEx")
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"=-{c}{AOPX}", CUR)
+r += 1
+SEB = r
+label(ws.cell(r, 1), "Stressed EBITDA", bold=True)
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"={c}{EPRE}+{c}{LAO}", CUR, bold=True, fill=GREY_FILL)
+r += 1
+LTX = r
+label(ws.cell(r, 1), "Less: Cash Taxes")
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"=-MAX(0,$B${STAX}*({c}{SEB}-$B${SDA}-$B${SINT}))", CUR)
+r += 1
+LCX = r
+label(ws.cell(r, 1), "Less: Maintenance Capex")
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"=-$B${SCAPEX}", CUR)
+r += 1
+SCF = r
+label(ws.cell(r, 1), "CFADS (stressed)", bold=True)
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"={c}{SEB}+{c}{LTX}+{c}{LCX}", CUR, bold=True, fill=GREY_FILL)
+r += 1
+SDSCR = r
+label(ws.cell(r, 1), "Global DSCR", bold=True)
+for c in "BCD":
+    out(ws[f"{c}{r}"], f"={c}{SCF}/$B${SDS}", RATIO, bold=True, fill=LIGHT_FILL)
+r += 2
+
+section(ws, r, "Pass / Fail Tests", span=5); r += 1
+hdr(ws.cell(r, 1), "Test")
+hdr(ws.cell(r, 2), "Base Case")
+hdr(ws.cell(r, 3), "Downside")
+hdr(ws.cell(r, 4), "Stress")
+hdr(ws.cell(r, 5), "Meaning")
+r += 1
+label(ws.cell(r, 1), "DSCR Covenant Test (>= 1.20x)", bold=True)
+for c in "BCD":
+    out(ws[f"{c}{r}"], f'=IF({c}{SDSCR}>=$B${SCOV},"PASS","FAIL")', '@', bold=True)
+cmt = ws.cell(r, 5, "Meets the loan's DSCR covenant"); cmt.font = NOTE_FONT; cmt.alignment = WRAP; cmt.border = BORDER
+r += 1
+label(ws.cell(r, 1), "Cash Coverage Test (>= 1.00x)", bold=True)
+for c in "BCD":
+    out(ws[f"{c}{r}"], f'=IF({c}{SDSCR}>=1,"PASS","FAIL")', '@', bold=True)
+cmt = ws.cell(r, 5, "Cash flow still fully covers debt service"); cmt.font = NOTE_FONT; cmt.alignment = WRAP; cmt.border = BORDER
+r += 2
+
+note(ws, r, "Why this matters:  Underwriters never lend on the base case alone. Sensitivity (downside) "
+            "analysis stresses the borrower's revenue and margins to find the breaking point and confirm the "
+            "loan still services - or to size the cushion if it does not. Here the Base Case clears the 1.20x "
+            "covenant; a moderate Downside breaches the covenant but cash flow still covers debt service "
+            "(DSCR > 1.0x); the severe Stress case fails both - the credit would then rely on collateral and "
+            "the personal guarantee. This is exactly why the deal is 'Approve WITH conditions' (DSCR covenant, "
+            "equity injection, collateral, guarantee) rather than an unconditional approval.",
+     span=5, height=86)
+
+
+# ----------------------------------------------------------------------------
+# Force spreadsheet apps to recalculate all formulas on open so formula cells
+# never display blank in viewers that don't auto-calculate.
+wb.calculation.fullCalcOnLoad = True
+
 wb.save("Commercial_Credit_Underwriting_Model.xlsx")
 print("Saved Commercial_Credit_Underwriting_Model.xlsx")
