@@ -40,6 +40,9 @@ another:
    liquidity, collateral, management, industry, trends) mapped to a risk grade.
 8. **08 Credit Memo** — recommendation, strengths, weaknesses, risks,
    mitigants and approval conditions; key metrics pull live from the other tabs.
+9. **09 Sensitivity Analysis** — downside / stress testing. Recalculates CFADS
+   and global DSCR under a Base, Downside and Stress case and shows whether each
+   passes the DSCR covenant and still covers debt service.
 
 ### Conventions
 - **Blue font = input/assumption cells** you can change.
@@ -55,6 +58,28 @@ another:
 - **Collateral coverage ≈ 1.09x** of lendable value; LTV ≈ 92% on discounted value.
 - Modest leverage (Debt/EBITDA < 2x, D/E ≈ 1.0x), strong liquidity (current
   ratio > 2x), and three years of steady growth with stable ~39% margins.
+
+## Downside / Sensitivity Analysis
+
+Underwriters never lend on the base case alone — they stress it. Tab **09
+Sensitivity Analysis** flexes three drivers (revenue decline, EBITDA-margin
+compression, and higher operating expenses) and recalculates CFADS and global
+DSCR under three scenarios:
+
+| Scenario | Revenue | Margin hit | Global DSCR | DSCR covenant (≥1.20x) | Cash coverage (≥1.00x) |
+|---|---|---|---|---|---|
+| **Base** | as reported | — | ≈ **1.33x** | PASS | PASS |
+| **Downside** | −7% | −1.0 pt | ≈ **1.09x** | FAIL | PASS |
+| **Stress** | −15% | −3.0 pts | ≈ **0.74x** | FAIL | FAIL |
+
+**Why downside analysis matters:** it finds the borrower's breaking point and
+shows how much cushion the bank actually has. Here the base case clears the
+covenant; a moderate downturn breaches the 1.20x DSCR covenant but cash flow
+still covers debt service (DSCR > 1.0x); only a severe stress drives DSCR below
+1.0x, where the bank would rely on collateral and the personal guarantee. That
+limited cushion is precisely **why the deal is "Approve *with conditions*"** —
+the DSCR covenant, equity injection, collateral lien and guarantee exist to
+protect the bank exactly when the downside hits.
 
 ## Banking / Underwriting Relevance
 
